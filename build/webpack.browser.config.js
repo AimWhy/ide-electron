@@ -8,31 +8,19 @@ const tsConfigPath = path.join(__dirname, '../tsconfig.json');
 const srcDir = path.join(__dirname, '../src/browser');
 const distDir = path.join(__dirname, '../app/browser');
 
-module.exports = {
+const { createConfig } = require('./webpack.base.config');
+
+module.exports = createConfig({
   entry: path.join(srcDir, './index.ts'),
-  node: {
-    net: 'empty',
-    child_process: 'empty',
-    path: true,
-    url: false,
-    fs: 'empty',
-    Buffer: false,
-    process: false,
-  },
+  target: 'electron-renderer',
   output: {
     filename: 'bundle.js',
     path: distDir,
+    assetModuleFilename: 'assets/[name][ext]',
   },
-  resolve: {
-    extensions: ['.ts', '.tsx', '.mjs', '.js', '.json', '.less'],
-    plugins: [
-      new TsconfigPathsPlugin({
-        configFile: tsConfigPath,
-      }),
-    ],
+  externalsPresets: {
+    node: true,
   },
-  mode: 'development',
-  devtool: 'source-map',
   module: {
     // https://github.com/webpack/webpack/issues/196#issuecomment-397606728
     exprContextCritical: false,
@@ -51,7 +39,7 @@ module.exports = {
       },
       {
         test: /\.png$/,
-        use: 'file-loader',
+        type: 'asset/resource',
       },
       {
         test: /\.css$/,
@@ -66,9 +54,12 @@ module.exports = {
           {
             loader: 'css-loader',
             options: {
+              importLoaders: 0,
               sourceMap: true,
-              modules: true,
-              localIdentName: '[local]___[hash:base64:5]',
+              esModule: false,
+              modules: {
+                localIdentName: '[local]___[hash:base64:5]',
+              },
             },
           },
           {
@@ -89,6 +80,10 @@ module.exports = {
           },
           {
             loader: 'css-loader',
+            options: {
+              importLoaders: 0,
+              esModule: false,
+            },
           },
           {
             loader: 'less-loader',
@@ -102,23 +97,25 @@ module.exports = {
       },
       {
         test: /\.(woff(2)?|ttf|eot|svg)(\?v=\d+\.\d+\.\d+)?$/,
-        use: [
-          {
-            loader: 'file-loader',
-            options: {
-              name: '[name].[ext]',
-              outputPath: 'fonts/',
-            },
-          },
-        ],
+        type: 'asset/resource',
+        generator: {
+          filename: 'fonts/[hash][ext]',
+        },
       },
+    ],
+  },
+  resolve: {
+    extensions: ['.ts', '.tsx', '.mjs', '.js', '.json', '.less'],
+    plugins: [
+      new TsconfigPathsPlugin({
+        configFile: tsConfigPath,
+      }),
     ],
   },
   resolveLoader: {
     modules: [path.join(__dirname, '../node_modules')],
     extensions: ['.ts', '.tsx', '.js', '.json', '.less'],
     mainFields: ['loader', 'main'],
-    moduleExtensions: ['-loader'],
   },
   plugins: [
     new HtmlWebpackPlugin({
@@ -134,7 +131,7 @@ module.exports = {
           from: require.resolve('@opensumi/ide-core-electron-main/browser-preload/index.js'),
           to: path.join(distDir, 'preload.js'),
         },
-      ]
+      ],
     }),
   ],
-};
+});

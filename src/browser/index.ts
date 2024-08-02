@@ -1,7 +1,11 @@
 const win = window as any;
 win.Buffer = win.BufferBridge;
 if (!(window as any).process) {
-  (window as any).process = { browser: true, env: (window as any).env, listener: () => [] };
+  (window as any).process = {
+    browser: true,
+    env: (window as any).env,
+    listener: () => [],
+  };
 }
 
 import '@opensumi/ide-i18n';
@@ -17,7 +21,6 @@ import { EditorModule } from '@opensumi/ide-editor/lib/browser';
 import { ExplorerModule } from '@opensumi/ide-explorer/lib/browser';
 import { FileTreeNextModule } from '@opensumi/ide-file-tree-next/lib/browser';
 import { FileServiceClientModule } from '@opensumi/ide-file-service/lib/browser';
-import { StaticResourceModule } from '@opensumi/ide-static-resource/lib/browser';
 import { SearchModule } from '@opensumi/ide-search/lib/browser';
 import { FileSchemeModule } from '@opensumi/ide-file-scheme/lib/browser';
 import { OutputModule } from '@opensumi/ide-output/lib/browser';
@@ -47,14 +50,19 @@ import { VariableModule } from '@opensumi/ide-variable/lib/browser';
 import { KeymapsModule } from '@opensumi/ide-keymaps/lib/browser';
 import { MonacoEnhanceModule } from '@opensumi/ide-monaco-enhance/lib/browser/module';
 
-import { OpenVsxExtensionManagerModule } from '@opensumi/ide-extension-manager/lib/browser';
 import { TerminalNextModule } from '@opensumi/ide-terminal-next/lib/browser';
 import { CommentsModule } from '@opensumi/ide-comments/lib/browser';
 
 import { ClientAddonModule } from '@opensumi/ide-addons/lib/browser';
 import { TaskModule } from '@opensumi/ide-task/lib/browser';
-import { customLayoutConfig } from './layout';
+
 import { DemoModule } from 'modules/demo';
+import { LocalBasicModule } from 'modules/basic/browser';
+
+import { customLayoutConfig } from './layout';
+import { MiniDesktopModule } from './module';
+
+import { ExtensionManagerModule } from '../extensionManager/browser';
 
 export const CommonBrowserModules: ConstructorOf<BrowserModule>[] = [
   MainLayoutModule,
@@ -68,7 +76,6 @@ export const CommonBrowserModules: ConstructorOf<BrowserModule>[] = [
   ExplorerModule,
   FileTreeNextModule,
   FileServiceClientModule,
-  StaticResourceModule,
   SearchModule,
   FileSchemeModule,
   OutputModule,
@@ -92,11 +99,13 @@ export const CommonBrowserModules: ConstructorOf<BrowserModule>[] = [
   KeymapsModule,
   TerminalNextModule,
   ExtensionModule,
-  OpenVsxExtensionManagerModule,
+  ExtensionManagerModule,
   MonacoEnhanceModule,
   ClientAddonModule,
   CommentsModule,
   TaskModule,
+  MiniDesktopModule,
+  LocalBasicModule,
 ];
 
 renderApp({

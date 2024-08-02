@@ -1,35 +1,42 @@
-# OpenSumi IDE Electron 集成示例
+# OpenSumi IDE Electron
+
+English | [中文文档](https://opensumi.com/zh/docs/integrate/quick-start/electron)
 
 ![OpenSumi Desktop](./snapshots/sumi-electron.png)
 
-## 快速开始
+## Startup
 
 ```shell
 git clone git@github.com:opensumi/ide-electron.git
 cd ide-electron
 yarn
-yarn run build
-yarn run rebuild-native -- --force-rebuild=true
-yarn run download-extension # 可选
-yarn run start
+yarn build
+yarn rebuild-native --force-rebuild=true
+yarn download-extension # install extension (Optional)
+yarn start
 ```
 
-## 开发
+to use the China CDN mirror, checkout branch `main-cn`:
 
-在项目根目录运行
-
-```bash
-yarn run watch
+```shell
+git checkout main-cn
 ```
 
-打开终端，运行：
+## Develop
 
-```bash
-yarn run start
+Start application:
+
+```shell
+yarn watch
+yarn start
 ```
 
-当代码有新改动时，通过快捷键 <kbd>shift</kbd>+<kbd>command</kbd>+<kbd>p</kbd> 打开编辑器内的命令面板，选择并运行 `Reload Window` 命令即可重新加载当前编辑器窗口。
+When there are new changes in the code, open the command panel in the editor <kbd>shift</kbd>+<kbd>command</kbd>+<kbd>p</kbd>, select and run the 'Reload Window' to reload the current editor window.
 
-## 打包成 DMG
+## package to DMG
 
-运行 `yarn run pack` 即可将项目打包，打包后的安装包将输出在 `out` 目录。
+package the project, and the installation package in the `out` directory:
+
+```shell
+yarn run pack
+```

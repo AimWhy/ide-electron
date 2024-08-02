@@ -55,10 +55,6 @@
         "version": "1.55.2"
       },
       {
-        "name": "git-ui",
-        "version": "1.55.2"
-      },
-      {
         "name": "go",
         "version": "1.55.2"
       },
@@ -84,7 +80,15 @@
       },
       {
         "name": "git",
+        "version": "1.62.3"
+      },
+      {
+        "name": "git-ui",
         "version": "1.55.2"
+      },
+      {
+        "name": "git-base",
+        "version": "1.64.0-next.68976705968"
       },
       {
         "name": "html",
@@ -132,10 +136,6 @@
       },
       {
         "name": "make",
-        "version": "1.55.2"
-      },
-      {
-        "name": "markdown-basics",
         "version": "1.55.2"
       },
       {
@@ -269,6 +269,24 @@
       {
         "name": "yaml",
         "version": "1.55.2"
+      }
+    ],
+    "ms-vscode": [
+      {
+        "name": "js-debug",
+        "version": "1.68.0"
+      }
+    ],
+    "vscode-icons-team": [
+      {
+        "name": "vscode-icons",
+        "version": "11.11.0"
+      }
+    ],
+    "opensumi": [
+      {
+        "name": "opensumi-default-themes",
+        "version": "2.5.5"
       }
     ]
   }

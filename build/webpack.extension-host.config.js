@@ -1,11 +1,13 @@
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
 const path = require('path');
+const { ProvidePlugin } = require('webpack');
+const { createConfig } = require('./webpack.base.config');
 
 const tsConfigPath = path.join(__dirname, '../tsconfig.json');
 const distDir = path.join(__dirname, '../app/extension');
 
-const nodeTarget = {
-  entry: path.join(__dirname, '../src/extension/index'), //require.resolve('@opensumi/ide-extension/lib/hosted/ext.process.js'),
+const nodeTarget = createConfig({
+  entry: path.join(__dirname, '../src/extension/index'), // require.resolve('@opensumi/ide-extension/lib/hosted/ext.process.js'),
   target: 'node',
   output: {
     filename: 'index.js',
@@ -21,8 +23,6 @@ const nodeTarget = {
       }),
     ],
   },
-  mode: 'development',
-  devtool: 'source-map',
   module: {
     // https://github.com/webpack/webpack/issues/196#issuecomment-397606728
     exprContextCritical: false,
@@ -32,6 +32,7 @@ const nodeTarget = {
         loader: 'ts-loader',
         options: {
           configFile: tsConfigPath,
+          transpileOnly: true,
         },
       },
       {
@@ -44,8 +45,11 @@ const nodeTarget = {
     ],
   },
   externals: [
-    function (context, request, callback) {
-      if (['node-pty', 'nsfw', 'spdlog', 'vm2'].indexOf(request) !== -1) {
+    {
+      nsfw: 'nsfw',
+    },
+    ({ context, request }, callback) => {
+      if (['node-pty', '@parcel/watcher', 'spdlog', 'vm2', 'keytar'].indexOf(request) !== -1) {
         return callback(null, 'commonjs ' + request);
       }
       callback();
@@ -55,20 +59,15 @@ const nodeTarget = {
     modules: [path.join(__dirname, '../node_modules')],
     extensions: ['.ts', '.tsx', '.js', '.json', '.less'],
     mainFields: ['loader', 'main'],
-    moduleExtensions: ['-loader'],
   },
-};
+});
 
-const workerTarget = {
-  entry: path.join(__dirname, '../src/extension/index.worker'), //require.resolve('@opensumi/ide-extension/lib/hosted/ext.process.js'),
+const workerTarget = createConfig({
+  entry: path.join(__dirname, '../src/extension/index.worker'), // require.resolve('@opensumi/ide-extension/lib/hosted/ext.process.js'),
   target: 'webworker',
   output: {
     filename: 'index.worker.js',
     path: distDir,
-  },
-  node: {
-    net: 'empty',
-    tls: 'empty',
   },
   resolve: {
     extensions: ['.ts', '.tsx', '.mjs', '.js', '.json', '.less'],
@@ -78,9 +77,22 @@ const workerTarget = {
         configFile: tsConfigPath,
       }),
     ],
+    fallback: {
+      os: false,
+      net: false,
+      path: false,
+      global: false,
+      util: false,
+      crypto: false,
+      buffer: require.resolve('buffer/'),
+    },
   },
-  mode: 'development',
-  devtool: 'source-map',
+  plugins: [
+    new ProvidePlugin({
+      Buffer: ['buffer', 'Buffer'],
+      process: 'process/browser',
+    }),
+  ],
   module: {
     // https://github.com/webpack/webpack/issues/196#issuecomment-397606728
     exprContextCritical: false,
@@ -90,6 +102,7 @@ const workerTarget = {
         loader: 'ts-loader',
         options: {
           configFile: tsConfigPath,
+          transpileOnly: true,
         },
       },
       {
@@ -102,8 +115,11 @@ const workerTarget = {
     ],
   },
   externals: [
-    function (context, request, callback) {
-      if (['node-pty', 'nsfw', 'spdlog', 'vm2', 'yargs'].indexOf(request) !== -1) {
+    {
+      nsfw: 'nsfw',
+    },
+    ({ context, request }, callback) => {
+      if (['node-pty', '@parcel/watcher', 'spdlog', 'vm2', 'yargs', 'keytar'].indexOf(request) !== -1) {
         return callback(null, 'commonjs ' + request);
       }
       callback();
@@ -113,8 +129,7 @@ const workerTarget = {
     modules: [path.join(__dirname, '../node_modules')],
     extensions: ['.ts', '.tsx', '.js', '.json', '.less'],
     mainFields: ['loader', 'main'],
-    moduleExtensions: ['-loader'],
   },
-};
+});
 
 module.exports = [nodeTarget, workerTarget];

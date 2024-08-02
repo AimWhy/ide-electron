@@ -1,38 +1,46 @@
+import path from 'path';
 import { app } from 'electron';
-import { ElectronMainApp } from '@opensumi/ide-core-electron-main';
-import { URI } from '@opensumi/ide-core-common';
-import { join } from 'path';
-import { MainModule } from './services';
-import { WebviewElectronMainModule } from '@opensumi/ide-webview/lib/electron-main';
-// import { ElectronMainWorkspaceModule } from '@opensumi/ide-workspace/lib/electron-main';
+import { launch } from './launch';
+import minimist from 'minimist';
+import { existsSync } from 'fs-extra';
 
-const getExtensionDir = () => {
-  const appPath = app.getAppPath();
-  if (appPath.indexOf('app.asar') > -1) {
-    return join(appPath, './../extensions');
+const launchFromCommandLine = (processArgv: string[], workingDirectory: string): Promise<void> => {
+  console.log('processArgv', processArgv);
+
+  const parsedArgs = minimist(processArgv);
+  const _argv = parsedArgs['_'].map((arg) => String(arg)).filter((arg) => arg.length > 0);
+  const [, , ...argv] = _argv; // remove the first non-option argument: it's always the app location
+
+  console.log('🚀 ~ file: index.ts ~ line 17 ~ launchFromCommandLine ~ argv', argv);
+  console.log('working directory', workingDirectory);
+
+  if (argv.length === 0) {
+    return launch();
   }
-  return join(appPath, './extensions'); // 相对于app的路径
+
+  try {
+    const argvPath = path.resolve(argv[0]);
+    const exists = existsSync(argvPath);
+    if (exists) {
+      return launch(argvPath);
+    }
+
+    const workspace = path.resolve(workingDirectory, argv[0]);
+    return launch(workspace);
+  } catch (e) {
+    console.error('parse argv error', e);
+    return launch();
+  }
+};
+
+const isSingleInstance = app.requestSingleInstanceLock();
+if (!isSingleInstance) {
+  app.quit();
+  process.exit(0);
 }
 
-const electronApp = new ElectronMainApp({
-  browserNodeIntegrated: true,
-  browserUrl: URI.file(join(__dirname, '../browser/index.html')).toString(),
-  modules: [
-    MainModule,
-    WebviewElectronMainModule,
-    // ElectronMainWorkspaceModule,
-  ],
-  nodeEntry: join(__dirname, '../node/index.js'),
-  extensionEntry: join(__dirname, '../extension/index.js'),
-  extensionWorkerEntry: join(__dirname, '../extension/index.worker.js'),
-  webviewPreload: join(__dirname, '../webview/host-preload.js'),
-  plainWebviewPreload: join(__dirname, '../webview/plain-preload.js'),
-  browserPreload: join(__dirname, '../browser/preload.js'),
-  extensionDir: getExtensionDir(),
-  extensionCandidate: [],
-  overrideWebPreferences: {},
+app.on('second-instance', (event, commandLine, workingDirectory) => {
+  launchFromCommandLine(commandLine, workingDirectory).catch(console.error);
 });
 
-electronApp.init().then(() => {
-  electronApp.loadWorkspace();
-});
+launchFromCommandLine(process.argv, process.cwd()).catch(console.error);

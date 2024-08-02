@@ -1,11 +1,12 @@
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
 const path = require('path');
+const { createConfig } = require('./webpack.base.config');
 
 const tsConfigPath = path.join(__dirname, '../tsconfig.json');
 const srcDir = path.join(__dirname, '../src/node');
 const distDir = path.join(__dirname, '../app/node');
 
-module.exports = {
+module.exports = createConfig({
   entry: path.join(srcDir, './index.ts'),
   target: 'node',
   output: {
@@ -21,8 +22,7 @@ module.exports = {
       }),
     ],
   },
-  mode: 'development',
-  devtool: 'source-map',
+
   module: {
     // https://github.com/webpack/webpack/issues/196#issuecomment-397606728
     exprContextCritical: false,
@@ -32,6 +32,7 @@ module.exports = {
         loader: 'ts-loader',
         options: {
           configFile: tsConfigPath,
+          transpileOnly: true,
         },
       },
       {
@@ -42,8 +43,13 @@ module.exports = {
     ],
   },
   externals: [
-    function (context, request, callback) {
-      if (['node-pty', 'nsfw', 'spdlog', 'vscode-ripgrep', 'vm2', 'keytar'].indexOf(request) !== -1) {
+    {
+      nsfw: 'nsfw',
+    },
+    ({ context, request }, callback) => {
+      if (
+        ['node-pty', '@parcel/watcher', 'spdlog', '@opensumi/ripgrep', 'vm2', 'keytar', 'vertx'].indexOf(request) !== -1
+      ) {
         return callback(null, 'commonjs ' + request);
       }
       callback();
@@ -53,6 +59,5 @@ module.exports = {
     modules: [path.join(__dirname, '../node_modules')],
     extensions: ['.ts', '.tsx', '.js', '.json', '.less'],
     mainFields: ['loader', 'main'],
-    moduleExtensions: ['-loader'],
   },
-};
+});

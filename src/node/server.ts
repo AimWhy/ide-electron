@@ -1,32 +1,62 @@
-
-// tslint:disable no-console
 import * as net from 'net';
 import * as yargs from 'yargs';
+import path from 'path';
+import { homedir } from 'os';
 import { Deferred } from '@opensumi/ide-core-common';
-import { IServerAppOpts, ServerApp, NodeModule } from '@opensumi/ide-core-node';
+import { IServerAppOpts, ServerApp } from '@opensumi/ide-core-node';
+import { Constants } from '../common/constants';
 
-export async function startServer(arg1: NodeModule[] | Partial<IServerAppOpts>) {
-  const deferred = new Deferred<net.Server>();
+declare const SERVER_APP_OPTS: Record<string, unknown> & {
+  marketplace: Record<string, unknown>;
+};
+
+function getDefinedServerOpts() {
+  try {
+    return SERVER_APP_OPTS;
+  } catch {
+    return {
+      marketplace: {},
+    };
+  }
+}
+
+function getDataFolder(sub: string) {
+  return path.join(homedir(), Constants.DATA_FOLDER, sub);
+}
+
+function getServerAppOpts() {
   let opts: IServerAppOpts = {
     webSocketHandler: [],
     marketplace: {
       showBuiltinExtensions: true,
-      accountId: 'nGJBcqs1D-ma32P3mBftgsfq',
-      masterKey: '-nzxLbuqvrKh8arE0grj2f1H',
+      extensionDir: getDataFolder('extensions'),
     },
-    // TODO 临时方案，传递外层 中间件函数
+    logDir: getDataFolder('logs'),
   };
-  if (Array.isArray(arg1)) {
+  try {
+    const newOpts = getDefinedServerOpts();
+
     opts = {
       ...opts,
-      modulesInstances: arg1,
+      ...newOpts,
+      marketplace: {
+        showBuiltinExtensions: true,
+        ...newOpts.marketplace,
+        ...opts.marketplace,
+      },
     };
-  } else {
-    opts = {
-      ...opts,
-      ...arg1,
-    };
-  }
+  } catch (error) {}
+  return opts;
+}
+
+export async function startServer(_opts: Partial<IServerAppOpts>) {
+  const deferred = new Deferred<net.Server>();
+  let opts: IServerAppOpts = getServerAppOpts();
+
+  opts = {
+    ...opts,
+    ..._opts,
+  };
 
   const server = net.createServer();
   const listenPath = (await yargs.argv).listenPath;

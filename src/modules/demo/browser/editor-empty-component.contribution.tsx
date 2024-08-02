@@ -1,55 +1,36 @@
 import React from 'react';
-import { useMemo, useState } from 'react';
-import { Domain, ComponentContribution, ComponentRegistry, EDITOR_COMMANDS, SEARCH_COMMANDS } from '@opensumi/ide-core-browser';
-import { KeybindingRegistry } from '@opensumi/ide-core-browser/lib/keybinding/keybinding';
+import { useState, useEffect, FC, useMemo } from 'react';
+import {
+  Domain,
+  ComponentContribution,
+  ComponentRegistry,
+  EDITOR_COMMANDS,
+  SEARCH_COMMANDS,
+  QUICK_OPEN_COMMANDS,
+} from '@opensumi/ide-core-browser';
+import { Keybinding, KeybindingRegistry } from '@opensumi/ide-core-browser/lib/keybinding/keybinding';
 import { useInjectable } from '@opensumi/ide-core-browser/lib/react-hooks';
 import { KeybindingView } from '@opensumi/ide-quick-open/lib/browser/components/keybinding';
-import { QUICK_OPEN_COMMANDS } from '@opensumi/ide-quick-open/lib/common';
-import { Disposable, localize, registerLocalizationBundle } from '@opensumi/ide-core-common';
+import { localize } from '@opensumi/ide-core-common';
 import { IKeymapService } from '@opensumi/ide-keymaps/lib/common/keymaps';
-import { ThrottledDelayer } from '@opensumi/ide-core-common/lib/async';
 
 import styles from './editor-empty-component.module.less';
-
-const DEFAULT_CHANGE_DELAY = 500; // ms
-
-// 集成侧自定义多语言
-export const localizationBundle = {
-  'zh-CN': {
-    languageId: 'zh-CN',
-    languageName: 'Chinese',
-    localizedLanguageName: '中文(中国)',
-    contents: {
-      'custom.quick_open': '转到文件',
-      'custom.command_palette': '显示所有命令',
-      'custom.terminal_panel': '切换终端',
-      'custom.search_panel': '切换搜索面板',
-    },
-  },
-  'en-US': {
-    languageId: 'en-US',
-    languageName: 'English',
-    localizedLanguageName: 'English',
-    contents: {
-      'custom.quick_open': 'Quick Open',
-      'custom.command_palette': 'Command Palette',
-      'custom.terminal_panel': 'Switch to Terminal Panel',
-      'custom.search_panel': 'Switch to Search Panel',
-    },
-  },
-};
-registerLocalizationBundle(localizationBundle['zh-CN']);
-registerLocalizationBundle(localizationBundle['en-US']);
 
 /**
  * 单行快捷键信息
  * @param param0
  * @returns
  */
-const ShortcutRow = ({ label, keybinding }) => <dl className={styles.shortcutRow}>
-  <span className={styles.label}>{label}</span>
-  <KeybindingView keybinding={keybinding} className={styles.keybinding} />
-</dl>;
+const ShortcutRow: FC<{
+  key: string;
+  label: string;
+  keybinding: Keybinding;
+}> = ({ key, label, keybinding }) => (
+  <dl className={styles.shortcutRow} key={key}>
+    <span className={styles.label}>{label}</span>
+    <KeybindingView keybinding={keybinding} className={styles.keybinding} />
+  </dl>
+);
 
 /**
  * 编辑器空白页引导信息
@@ -61,35 +42,23 @@ export const EditorEmptyComponent = () => {
   const keybindingRegistry = useInjectable<KeybindingRegistry>(KeybindingRegistry);
   const keymapService = useInjectable<IKeymapService>(IKeymapService);
 
-  const keymapChangeDelayer = new ThrottledDelayer<void>(DEFAULT_CHANGE_DELAY);
   const getKeybinding = (commandId: string) => {
     const bindings = keybindingRegistry.getKeybindingsForCommand(commandId);
     if (!bindings.length) {
       return;
     }
 
-    const keyBindings = bindings.sort((a, b) => ((b.priority || 0) - (a.priority || 0)));
+    const keyBindings = bindings.sort((a, b) => (b.priority || 0) - (a.priority || 0));
     // 如果快捷键条目没有 when 条件，优先使用
     const primaryKeybinding = bindings.find((binding) => !binding.when);
     return primaryKeybinding || keyBindings[0];
   };
 
-  const init = () => {
+  useEffect(() => {
     // 监听快捷键是否有更新
-    return keymapService.onDidKeymapChanges(() => {
-      keymapChangeDelayer.trigger(async () => {
-        setKeyMapLoaded(true);
-      });
+    keymapService.whenReady.then(() => {
+      setKeyMapLoaded(true);
     });
-  };
-
-  React.useEffect(() => {
-    const disposer = new Disposable();
-    disposer.addDispose(init());
-
-    return () => {
-      disposer.dispose();
-    };
   }, []);
 
   const ShortcutView = useMemo(() => {
@@ -119,24 +88,33 @@ export const EditorEmptyComponent = () => {
         keybinding: getKeybinding(SEARCH_COMMANDS.OPEN_SEARCH.id),
       },
     ].filter((e) => e.keybinding);
-
-    return <div className={styles.shortcutPanel}>
-      {keyInfos.map((keyInfo) => <ShortcutRow key={keyInfo.command} label={keyInfo.label} keybinding={keyInfo.keybinding}></ShortcutRow>)}
-    </div>;
+    return (
+      <div className={styles.shortcutPanel}>
+        {keyInfos.map((keyInfo) => (
+          <ShortcutRow
+            key={keyInfo.command}
+            label={keyInfo.label}
+            keybinding={keyInfo.keybinding as Keybinding}
+          ></ShortcutRow>
+        ))}
+      </div>
+    );
   }, [imgLoaded, keyMapLoaded]);
 
-  const logoUri = 'https://img.alicdn.com/imgextra/i2/O1CN01NR0L1l1M3AUVVdKhq_!!6000000001378-2-tps-152-150.png';
-  return <div className={styles.empty_component}>
-    <img src={logoUri} onLoad={() => setImgLoaded(true)} />
-    {ShortcutView}
-  </div>;
+  const logoUri = 'https://img.alicdn.com/imgextra/i2/O1CN01dqjQei1tpbj9z9VPH_!!6000000005951-55-tps-87-78.svg';
+  return (
+    <div className={styles.empty_component}>
+      <img src={logoUri} onLoad={() => setImgLoaded(true)} />
+      {ShortcutView}
+    </div>
+  );
 };
 
 @Domain(ComponentContribution)
 export class EditorEmptyComponentContribution implements ComponentContribution {
   registerComponent(registry: ComponentRegistry) {
     registry.register('editor-empty', {
-      id: 'editor-empty',
+      id: 'empty-component',
       component: EditorEmptyComponent,
       initialProps: {},
     });
